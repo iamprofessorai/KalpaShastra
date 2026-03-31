@@ -1,0 +1,89 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    // Collection: users
+    // Document ID: {uid}
+    // Fields:
+    //   - uid: string (required) - Firebase Auth UID
+    //   - name: string (required) - Max 100 chars
+    //   - dob: string (required) - ISO Date
+    //   - tob: string (optional)
+    //   - pob: string (optional)
+    //   - signature: map (optional) - AI generated cosmic signature
+    //   - createdAt: timestamp (required)
+    //
+    // Collection: predictions
+    // Document ID: {predictionId}
+    // Fields:
+    //   - uid: string (required) - User UID
+    //   - date: string (required) - ISO Date (YYYY-MM-DD)
+    //   - career: string - Max 1000 chars
+    //   - love: string - Max 1000 chars
+    //   - health: string - Max 1000 chars
+    //   - do: list - Max 10 items
+    //   - dont: list - Max 10 items
+    //   - lalKitabRemedy: string - Max 1000 chars
+    // ===============================================================
+
+    // Helper Functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+          (request.auth.token.email == "vapionline123@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    function hasRequiredFields(data, fields) {
+      return data.keys().hasAll(fields);
+    }
+
+    function isValidUser(data) {
+      return hasRequiredFields(data, ['uid', 'name', 'dob', 'createdAt']) &&
+             data.uid is string &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.dob is string &&
+             data.createdAt is timestamp &&
+             (!('signature' in data) || data.signature is map);
+    }
+
+    function isValidPrediction(data) {
+      return hasRequiredFields(data, ['uid', 'date', 'career', 'love', 'health']) &&
+             data.uid is string &&
+             data.date is string &&
+             data.career is string && data.career.size() < 1000 &&
+             data.love is string && data.love.size() < 1000 &&
+             data.health is string && data.health.size() < 1000 &&
+             (!('do' in data) || (data.do is list && data.do.size() <= 10)) &&
+             (!('dont' in data) || (data.dont is list && data.dont.size() <= 10));
+    }
+
+    // Match users collection
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId) && isValidUser(request.resource.data) && 
+                      (!('role' in request.resource.data) || request.resource.data.role == 'seeker');
+      allow update: if isOwner(userId) && isValidUser(request.resource.data) && 
+                      request.resource.data.uid == resource.data.uid &&
+                      (!('role' in request.resource.data) || request.resource.data.role == resource.data.role) ||
+                      isAdmin();
+    }
+
+    // Match predictions collection
+    match /predictions/{predictionId} {
+      allow read: if isAuthenticated() && (request.auth.uid == resource.data.uid || isAdmin());
+      allow create: if isAuthenticated() && request.auth.uid == request.resource.data.uid && isValidPrediction(request.resource.data);
+      allow list: if isAuthenticated() && (request.auth.uid == resource.data.uid || isAdmin());
+      allow update, delete: if isAdmin();
+    }
+  }
+}

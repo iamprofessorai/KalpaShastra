@@ -1,0 +1,53 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "Stores user identity and cosmic signature data.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Firebase Auth UID" },
+        "name": { "type": "string" },
+        "dob": { "type": "string", "format": "date" },
+        "time": { "type": "string" },
+        "location": { "type": "string" },
+        "signature": {
+          "type": "object",
+          "properties": {
+            "title": { "type": "string" },
+            "path": { "type": "string" },
+            "description": { "type": "string" },
+            "vibeScore": { "type": "number" }
+          }
+        },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "name", "dob"]
+    },
+    "Prediction": {
+      "title": "Daily Prediction",
+      "description": "Stores daily AI-generated predictions for the user.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "career": { "type": "string" },
+        "love": { "type": "string" },
+        "health": { "type": "string" },
+        "do": { "type": "array", "items": { "type": "string" } },
+        "dont": { "type": "array", "items": { "type": "string" } },
+        "lalKitabRemedy": { "type": "string" }
+      },
+      "required": ["uid", "date"]
+    }
+  },
+  "firestore": {
+    "/users/{uid}": {
+      "schema": "UserProfile",
+      "description": "User profile data"
+    },
+    "/predictions/{predictionId}": {
+      "schema": "Prediction",
+      "description": "Daily predictions"
+    }
+  }
+}

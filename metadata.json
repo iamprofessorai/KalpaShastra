@@ -1,0 +1,9 @@
+{
+  "name": "Again India",
+  "description": "A high-conversion, immersive ecosystem synchronizing ancient Shastra with cybernetic intelligence, featuring 3D visualizations, AI-driven cosmic signatures, and real-time planetary tracking.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone",
+    "geolocation"
+  ]
+}
